@@ -14,6 +14,7 @@ import com.demo.retrofitrxjava.network.IGetPerson;
 import com.demo.retrofitrxjava.network.IRequestInterface;
 import com.jakewharton.retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,6 +27,10 @@ import io.reactivex.functions.Action;
 import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
+import okhttp3.Interceptor;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
@@ -64,10 +69,29 @@ public class MainActivity extends AppCompatActivity {
                 .addConverterFactory(GsonConverterFactory.create())
                 .build().create(IRequestInterface.class);
 
+        // debug
+        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(interceptor)
+                //.addInterceptor(REWRITE_CACHE_CONTROL_INTERCEPTOR)
+                .addNetworkInterceptor(new Interceptor() {
+
+                    @Override
+
+                    public okhttp3.Response intercept(Chain chain) throws IOException {
+                        Request request = chain.request().newBuilder()
+                                // .addHeader(Constant.Header, authToken)
+                                .build();
+                        return chain.proceed(request);
+                    }
+                }).build();
+
         IGetPerson getPerson = new Retrofit.Builder()
                 .baseUrl("http://uinames.com/api/")
                 .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                 .addConverterFactory(GsonConverterFactory.create())
+                .client(client)
                 .build().create(IGetPerson.class);
 
         callOneApi(requestInterface);
